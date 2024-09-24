@@ -195,7 +195,7 @@ List of templates:
             && systemctl stop xray.service \
             && nginx -s reload \
             && systemctl start xray.service \
-            && echo "configuration completed!"
+            && echo "configuration completed! uuid=$uuid"
     else
         pr_error "generate configuration failed!"
         exit 1
