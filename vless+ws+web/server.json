@@ -18,7 +18,7 @@
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "$ws_path"
+          "path": "$xray_ws_path"
         }
       },
 			"sniffing": {

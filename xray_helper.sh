@@ -11,7 +11,7 @@ ACME=$HOME/.acme.sh/acme.sh
 CERT_INSTALL_PATH=$HOME/.ssl
 
 my_dir=$(pwd)
-ws_path=/v0
+xray_ws_path=/v0
 xray_ws_port=8080
 xray_tcp_port=80
 email=wn123o@outlook.com
@@ -19,6 +19,7 @@ domain=snowland.ink
 webroot=/var/www/html
 ca_server=zerossl
 auto_issue_cert=0
+name="Default"
 action=0
 
 function pr_error() {
@@ -147,8 +148,11 @@ List of templates:
 
     read -p "Please select a template: " tid
     local uuid=$(xray uuid)
+	local scheme="vless:"
     case $tid in
         1)
+			local authority="//$uuid@$domain:$xray_tcp_port"
+			local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&fp=chrome&type=tcp&sni=$domain#$name"
             cp -r $HOME/.xray/templates/vless+tcp+tls . \
                 && cd vless+tcp+tls \
 		&& sed -i "s#\$uuid#$uuid#g" server.json \
@@ -163,25 +167,28 @@ List of templates:
                 && sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf
             ;;
         2)
+			local authority="//$uuid@$domain:443"
+			local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#$name"
             cp -r $HOME/.xray/templates/vless+ws+web . \
                 && cd vless+ws+web \
                 && sed -i "s#\$uuid#$uuid#g" server.json \
                 && sed -i "s#\$xray_ws_port#$xray_ws_port#g" server.json \
-                && sed -i "s#\$ws_path#$ws_path#g" server.json \
+                && sed -i "s#\$xray_ws_path#$xray_ws_path#g" server.json \
                 && sed -i "s#\$domain#$domain#g" nginx.conf \
                 && sed -i "s#\$webroot#$webroot#g" nginx.conf \
                 && sed -i "s#\$ssl_full_chain#$CERT_INSTALL_PATH/$domain.pem#g" nginx.conf \
                 && sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf \
-                && sed -i "s#\$ws_path#$ws_path#g" nginx.conf \
+                && sed -i "s#\$xray_ws_path#$xray_ws_path#g" nginx.conf \
                 && sed -i "s#\$xray_ws_port#$xray_ws_port#g" nginx.conf
             ;;
         *)
             pr_error "$tid not a valid template id!"
             ;;
     esac
-
+	
     if [ $? -eq 0 ];
     then
+		local share_uri=$(echo -n "$scheme$authority$query" | base64)
         cp nginx.conf /etc/nginx/sites-available/$domain \
 	    && rm -rf /etc/nginx/sites-e/$domain \
             && ln -sf /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/$domain \
@@ -193,7 +200,7 @@ List of templates:
             && systemctl stop nginx.service \
 	    && systemctl start nginx.service \
             && systemctl start xray.service \
-            && echo "configuration completed! uuid=$uuid"
+            && echo -e "configuration completed!\n\n \e[32m$share_uri\e[0m"
     else
         pr_error "generate configuration failed!"
         exit 1
