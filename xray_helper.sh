@@ -229,7 +229,7 @@ parse_args $@
 
 case $action in
     $ACTION_INIT)
-        echo "init"
+        install
         ;;
     $ACTION_CONFIGURE)
         configure
