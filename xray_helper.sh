@@ -27,7 +27,7 @@ function pr_error() {
 }
 
 function pr_warn() {
-    echo -e "\e[43m$1\e[0m"
+    echo -e "\e[33m$1\e[0m"
 }
 
 function parse_arg() {
@@ -100,15 +100,15 @@ function install() {
         apt update
         apt install nginx -y
     else
-        echo "nginx already installed, skipped."
+        pr_warn "nginx already installed, skipped."
     fi
     
     # install acme.sh
-    if ! $ACME -version > /dev/null 2>$1;
+    if ! $ACME --version > /dev/null 2>&1;
     then
         curl https://get.acme.sh | sh -s email=$email
     else
-        echo "acme.sh already installed, skipped."
+        pr_warn "acme.sh already installed, skipped."
     fi
 
     # install xray
@@ -116,7 +116,7 @@ function install() {
     then
         bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u root
     else
-        echo "xray already installed, skipped."
+        pr_warn "xray already installed, skipped."
     fi
 
     # if auto_issue_cert option is specified, we still need issue cert.
@@ -200,7 +200,7 @@ List of templates:
             && systemctl stop nginx.service \
 	    && systemctl start nginx.service \
             && systemctl start xray.service \
-            && echo -e "configuration completed!\n\n \e[32m$share_uri\e[0m"
+            && echo -e "configuration completed!\n\n\e[32m$share_uri\e[0m\n"
     else
         pr_error "generate configuration failed!"
         exit 1
