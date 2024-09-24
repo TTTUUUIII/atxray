@@ -11,7 +11,7 @@ ACME=$HOME/.acme.sh/acme.sh
 CERT_INSTALL_PATH=$HOME/.ssl
 
 my_dir=$(pwd)
-ws_path="/v0"
+ws_path=/v0
 xray_ws_port=8080
 xray_tcp_port=80
 email=wn123o@outlook.com
@@ -43,6 +43,9 @@ function parse_arg() {
     --webroot*)
         webroot=$value
         ;;
+	--ca-server*)
+		ca_server=$value
+		;;
     --auto-issue-cert)
         auto_issue_cert=1
         ;;
@@ -77,23 +80,15 @@ function parse_args() {
 }
 
 function issue_cert() {
-    for((i=0;i<$1;++i))
-        do
-            if [ $i -gt 0 ];
-            then
-                pr_warn "retry $i"
-            fi
-            $ACME --issue -d $domain -w $webroot --keylength ec-256 --server $ca_server
-            if [ $? -eq 0 ];
-            then
-                mkdir -p $CERT_INSTALL_PATH
-                $ACME --install-cert -d $domain --key-file "$CERT_INSTALL_PATH/$domain.key" --fullchain-file "$CERT_INSTALL_PATH/$domain.pem"
-                return $?
-            fi
-        done
-
-        pr_error "issue cert failed!"
-        return 1
+	$ACME --issue -d $domain -w $webroot --keylength ec-256 --server $ca_server
+	if [ $? -eq 0 ];
+	then
+		mkdir -p $CERT_INSTALL_PATH
+		$ACME --install-cert -d $domain --key-file "$CERT_INSTALL_PATH/$domain.key" --fullchain-file "$CERT_INSTALL_PATH/$domain.pem"
+		return $?
+	fi
+    pr_error "issue cert failed!"
+    return 1
 }
 
 function install() {
@@ -126,7 +121,7 @@ function install() {
     # if auto_issue_cert option is specified, we still need issue cert.
     if [ $auto_issue_cert -eq 1 ];
     then
-        issue_cert 3
+        issue_cert
     fi
     
     echo "init completed."
@@ -156,6 +151,7 @@ List of templates:
         1)
             cp -r $HOME/.xray/templates/vless+tcp+tls . \
                 && cd vless+tcp+tls \
+		&& sed -i "s#\$uuid#$uuid#g" server.json \
                 && sed -i "s#\$xray_tcp_port#$xray_tcp_port#g" server.json \
                 && sed -i "s#\$email#$email#g" server.json \
                 && sed -i "s#\$domain#$domain#g" server.json \
@@ -214,8 +210,11 @@ usage: xray_helper.sh [ACTION] [OPTION]...
 
 actions:
     init or install             xray、nginx、acme.sh will be installed.
+		--auto-issue-cert
     configure                   generate xray configure.
+		--domain, --email, --webroot
     cert                        issue a ssl cert use acme.sh.
+		--email, --domain, --webroot, --ca-server
     help                        show this help.
 
 options:
@@ -223,6 +222,13 @@ options:
     --domain                    specify domain.
     --webroot                   specify web root.
     --auto-issue-cert           vaild when action is install (or init), when this option was specified, an ssl cert will be automatically issue a cert after installed.
+	--ca-server					specify ca server for acme.sh.
+		supported CA:
+			- zerossl
+			- letsencrypt
+			- buypass
+			- ssl
+			- google
 """
 
 }
