@@ -151,7 +151,7 @@ List of templates:
 """
 
     read -p "Please select a template: " tid
-    local uuid=$($HOME/Downloads/Xray-linux-64/xray uuid)
+    local uuid=$(xray uuid)
     case $tid in
         1)
             cp -r $HOME/.xray/templates/vless+tcp+tls . \
@@ -186,14 +186,16 @@ List of templates:
 
     if [ $? -eq 0 ];
     then
-        cp nginx.conf /etc/nginx/site-available/$domain \
-            && ln -s /etc/nginx/site-enabled/$domain \
-            && mkdir -p /usr/local/xray/conf.d \
+        cp nginx.conf /etc/nginx/sites-available/$domain \
+	    && rm -rf /etc/nginx/sites-e/$domain \
+            && ln -sf /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/$domain \
+            && mkdir -p /usr/local/etc/xray/conf.d \
             && cp server.json /usr/local/etc/xray/conf.d/$(basename `pwd`).json \
             && rm -f /usr/local/etc/xray/conf.d/config.json \
-            && ln -s /usr/local/etc/xray/conf.d/$(basename `pwd`).json /usr/local/etc/xray/config.json \
+            && ln -sf /usr/local/etc/xray/conf.d/$(basename `pwd`).json /usr/local/etc/xray/config.json \
             && systemctl stop xray.service \
-            && nginx -s reload \
+            && systemctl stop nginx.service \
+	    && systemctl start nginx.service \
             && systemctl start xray.service \
             && echo "configuration completed! uuid=$uuid"
     else

@@ -10,7 +10,7 @@
             "settings": {
                 "clients": [
                     {
-                        "id": "",
+                        "id": "$uuid",
                         "level": 0,
                         "email": "$email"
                     }
