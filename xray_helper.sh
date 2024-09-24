@@ -101,8 +101,8 @@ function install() {
     # install nginx
     if ! nginx -version > /dev/null 2>&1;
     then
-        apt udpate
-        apt install nginx
+        apt update
+        apt install nginx -y
     else
         echo "nginx already installed, skipped."
     fi
