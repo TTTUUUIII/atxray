@@ -180,7 +180,7 @@ List of templates:
 	case ${tid:=1} in
 	1)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
-		local xray_tcp_port=${xray_tcp_port:-8081}
+		local xray_tcp_port=${xray_tcp_port:-443}
 		local authority="//$uuid@$domain:$xray_tcp_port"
 		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
 		cp -r $HOME/.xray/templates/vless+tcp+tls . &&
@@ -192,14 +192,12 @@ List of templates:
 			sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" server.json &&
 			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" server.json &&
 			sed -i "s#\$domain#$domain#g" nginx.conf &&
-			sed -i "s#\$webroot#$webroot#g" nginx.conf &&
-			sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" nginx.conf &&
-			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf
+			sed -i "s#\$webroot#$webroot#g" nginx.conf
 		;;
 	2)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_ws_path=${xray_ws_path:-/v0}
-		local xray_ws_port=${xray_ws_port:-8082}
+		local xray_ws_port=${xray_ws_port:-8081}
 		local authority="//$uuid@$domain:443"
 		local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#${remark:-Default}"
 		cp -r $HOME/.xray/templates/vless+ws+web . &&
