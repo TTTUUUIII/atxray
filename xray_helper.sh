@@ -19,6 +19,7 @@ email=wn123o@outlook.com
 domain=snowland.ink
 webroot=/var/www/html
 auto_issue_cert=0
+auto_configuration=0
 action=0
 
 function pr_error() {
@@ -31,8 +32,11 @@ function pr_warn() {
 
 function parse_arg() {
 	local index=$(expr index "$1" "=")
-	local key=${1:0:((index - 1))}
-	local value=${1:index}
+	local key=$1 value=""
+	if [ $index -ne 0 ]; then
+		key=${1:0:((index - 1))}
+		value=${1:index}
+	fi
 	case $1 in
 	--email*)
 		email=$value
@@ -46,14 +50,17 @@ function parse_arg() {
 	--ca-server*)
 		ca_server=$value
 		;;
-	--name)
+	--name*)
 		name=$value
 		;;
-	--uuid)
+	--uuid*)
 		uuid=$value
 		;;
 	--auto-issue-cert)
 		auto_issue_cert=1
+		;;
+	--auto-configuration)
+		auto_configuration=1
 		;;
 	install | init)
 		action=$ACTION_INIT
@@ -128,8 +135,11 @@ function install() {
 	# if auto_issue_cert option is specified, we still need issue cert.
 	if [ $auto_issue_cert -eq 1 ]; then
 		issue_cert
-	fi
 
+		if [ $? -eq 0 ] && [ $auto_configuration -eq 1 ]; then
+			configure
+		fi
+	fi
 	echo "init completed."
 }
 
@@ -234,6 +244,7 @@ options:
     --domain                    specify domain.
     --webroot                   specify web root.
     --auto-issue-cert           vaild when action is install (or init), when this option was specified, an ssl cert will be automatically issue a cert after installed.
+    --auto-configuration        vaild when action is install (or init) and --auto-issue-cert is specified.
 	--ca-server					specify ca server for acme.sh.
 		supported CA:
 			- zerossl
@@ -241,6 +252,8 @@ options:
 			- buypass
 			- ssl
 			- google
+    --name                      specify configuration name.
+    --uuid                      specify configuration uuid.
 """
 
 }
