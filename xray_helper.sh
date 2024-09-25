@@ -12,11 +12,8 @@ ACME=$HOME/.acme.sh/acme.sh
 CERT_INSTALL_PATH=$HOME/.ssl
 
 my_dir=$(pwd)
-xray_ws_path=/v0
-xray_ws_port=8080
-xray_tcp_port=80
-email=wn123o@outlook.com
-domain=snowland.ink
+email=example@outlook.com
+domain=example.com
 webroot=/var/www/html
 auto_issue_cert=0
 auto_configuration=0
@@ -50,8 +47,8 @@ function parse_arg() {
 	--ca-server*)
 		ca_server=$value
 		;;
-	--name*)
-		name=$value
+	--remark*)
+		remark=$value
 		;;
 	--uuid*)
 		uuid=$value
@@ -91,11 +88,15 @@ function parse_args() {
 }
 
 function issue_cert() {
+    local renew=${renew:-0}
 	if [ $domain == "" ]; then
 		read -p "Please input your domain: " domain
 	fi
-
-	$ACME --issue -d $domain -w $webroot --keylength ec-256 --server ${ca_server:-zerossl}
+    if [ $renew -eq 1 ]; then
+        $ACME --renew -d $domain --force
+    else
+	    $ACME --issue -d $domain -w $webroot --keylength ec-256 --server ${ca_server:-zerossl}
+    fi
 	if [ $? -eq 0 ]; then
 		mkdir -p $CERT_INSTALL_PATH
 		$ACME --install-cert -d $domain --key-file "$CERT_INSTALL_PATH/$domain.key" --fullchain-file "$CERT_INSTALL_PATH/$domain.pem"
@@ -163,8 +164,9 @@ List of templates:
 	local scheme="vless:"
 	case $tid in
 	1)
+        local xray_tcp_port=${xray_tcp_port:-80}
 		local authority="//$uuid@$domain:$xray_tcp_port"
-		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&fp=chrome&type=tcp&sni=$domain#${name:-Default}"
+		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
 		cp -r $HOME/.xray/templates/vless+tcp+tls . &&
 			cd vless+tcp+tls &&
 			sed -i "s#\$uuid#$uuid#g" server.json &&
@@ -179,8 +181,10 @@ List of templates:
 			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf
 		;;
 	2)
+        local xray_ws_path=${xray_ws_path:-/v0}
+        local xray_ws_port=${xray_ws_port:-8080}
 		local authority="//$uuid@$domain:443"
-		local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#${name:-Default}"
+		local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#${remark:-Default}"
 		cp -r $HOME/.xray/templates/vless+ws+web . &&
 			cd vless+ws+web &&
 			sed -i "s#\$uuid#$uuid#g" server.json &&
@@ -251,7 +255,7 @@ options:
 			- buypass
 			- ssl
 			- google
-    --name                      specify configuration name.
+    --remark                    specify configuration alias.
     --uuid                      specify configuration uuid.
 """
 
