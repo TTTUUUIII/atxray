@@ -280,10 +280,9 @@ options:
     --xray-ws-path              xray ws path.
 
     examples:
-        xray_helper.sh init --email=example@gmail.com                                                                       initialize environment for xray.
-        xray_helper.sh cert --domain=example.com                                                                            issue and install cert use acme.sh.
-        xray_helper.sh configure --domain=example.com                                                                       generate xray configuration.
-        xray_helper.sh init --auto-issue-cert --auto-configre --domain=example.com --email=example@gmail.com                ...
+        xray_helper.sh init --email=example@gmail.com                       initialize environment for xray.
+        xray_helper.sh cert --domain=example.com                            issue and install cert use acme.sh.
+        xray_helper.sh configure --domain=example.com                       generate xray configuration.
 """
 
 }
