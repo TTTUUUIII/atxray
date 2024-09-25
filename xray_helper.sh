@@ -214,7 +214,7 @@ List of templates:
 			systemctl stop nginx.service &&
 			systemctl start nginx.service &&
 			systemctl start xray.service &&
-			echo -e "configuration completed!\n\n\e[32m$share_uri\e[0m\n"
+			echo -e "configuration successful!\n\n\e[32m$share_uri\e[0m\n"
 	else
 		pr_error "generate configuration failed!"
 		exit 1
