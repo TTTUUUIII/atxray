@@ -95,9 +95,19 @@ function parse_args() {
 
 }
 
+function requires() {
+	for cmd in "$@"; do
+		if ! $cmd --version >/dev/null 2>&1 && ! $cmd -version >/dev/null 2>&1; then
+			pr_error "failed! $cmd not install."
+			exit 1
+		fi
+	done
+}
+
 function issue_cert() {
+	requires $ACME
 	local renew=${force_renew:-0}
-	[ -z "$domain" ] && read -p "Please input your domain: " domain
+	[ -z "$domain" ] && read -p "Input your domain: " domain
 	if [ $renew -eq 1 ]; then
 		$ACME --renew -d $domain --force
 	else
@@ -112,7 +122,6 @@ function issue_cert() {
 }
 
 function install() {
-
 	local auto_issue_cert=${auto_issue_cert:-0}
 	local auto_configure=${auto_configure:-0}
 	# install nginx
@@ -125,7 +134,7 @@ function install() {
 
 	# install acme.sh
 	if ! $ACME --version >/dev/null 2>&1; then
-		[ -z "$email" ] && read -p "Please input your email: " email
+		[ -z "$email" ] && read -p "Input your email: " email
 		curl https://get.acme.sh | sh -s email=$email
 	else
 		pr_warn "acme.sh already installed, skipped."
@@ -149,6 +158,7 @@ function install() {
 }
 
 function configure() {
+	requires git xray nginx
 	if [ ! -d $HOME/.xray/templates ]; then
 		echo "fetch templates from $TEMPLATES_GIT_URL"
 		if ! git clone $TEMPLATES_GIT_URL $HOME/.xray/templates; then
@@ -156,20 +166,20 @@ function configure() {
 		fi
 	fi
 
-	echo """
+	echo -e """
 List of templates:
 +-------------------+
-| 1. vless+tcp+tls  |
+| \e[36m1. vless+tcp+tls\e[0m  |
 | 2. vless+ws+web   |
 +-------------------+
 """
 
-	read -p "Please select a template: " tid
+	read -p "Select a template[1]: " tid
 	local uuid=${uuid:-$(xray uuid)}
 	local scheme="vless:"
-	[ -z "$domain" ] && read -p "Please input your domain: " domain
-	case $tid in
+	case ${tid:=1} in
 	1)
+		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_tcp_port=${xray_tcp_port:-8081}
 		local authority="//$uuid@$domain:$xray_tcp_port"
 		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
@@ -187,6 +197,7 @@ List of templates:
 			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf
 		;;
 	2)
+		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_ws_path=${xray_ws_path:-/v0}
 		local xray_ws_port=${xray_ws_port:-8082}
 		local authority="//$uuid@$domain:443"
