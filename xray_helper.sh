@@ -284,4 +284,4 @@ $ACTION_SHOW_HELP)
 	;;
 esac
 
-exit @?
+exit $?
