@@ -120,7 +120,7 @@ function install() {
 		if [ $email == "" ]; then
 			read -p "Please input your email: " email
 		fi
-		curl https://get.acme.sh | sh -s $email
+		curl https://get.acme.sh | sh -s email=$email
 	else
 		pr_warn "acme.sh already installed, skipped."
 	fi
@@ -140,7 +140,6 @@ function install() {
 			configure
 		fi
 	fi
-	echo "init completed."
 }
 
 function configure() {
