@@ -158,7 +158,7 @@ function install() {
 }
 
 function configure() {
-	requires git xray nginx
+	requires git xray /usr/sbin/nginx
 	if [ ! -d $HOME/.xray/templates ]; then
 		echo "fetch templates from $TEMPLATES_GIT_URL"
 		if ! git clone $TEMPLATES_GIT_URL $HOME/.xray/templates; then
@@ -168,33 +168,38 @@ function configure() {
 
 	echo -e """
 List of templates:
-+-------------------+
-| \e[36m1. vless+tcp+tls\e[0m  |
-| 2. vless+ws+web   |
-+-------------------+
++--------------------------+
+| 1. vless+tcp+tls         |
+| 2. vless+tcp+xtls-vision |
+| 3. vless+ws+web          |
++--------------------------+
 """
 
 	read -p "Select a template[1]: " tid
 	local uuid=${uuid:-$(xray uuid)}
 	local scheme="vless:"
 	case ${tid:=1} in
-	1)
+	1|2)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_tcp_port=${xray_tcp_port:-443}
 		local authority="//$uuid@$domain:$xray_tcp_port"
-		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
-		cp -r $HOME/.xray/templates/vless+tcp+tls . &&
-			cd vless+tcp+tls &&
-			sed -i "s#\$uuid#$uuid#g" server.json &&
-			sed -i "s#\$xray_tcp_port#$xray_tcp_port#g" server.json &&
-			sed -i "s#\$email#$email#g" server.json &&
-			sed -i "s#\$domain#$domain#g" server.json &&
-			sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" server.json &&
-			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" server.json &&
-			sed -i "s#\$domain#$domain#g" nginx.conf &&
-			sed -i "s#\$webroot#$webroot#g" nginx.conf
+		if [ $tid -eq 1 ]; then
+			cp -r $HOME/.xray/templates/vless+tcp+tls . && cd vless+tcp+tls
+		else
+			local flow="xtls-rprx-vision"
+			cp -r $HOME/.xray/templates/vless+tcp+xtls-vision . && cd vless+tcp+xtls-vision
+		fi
+		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&flow=${flow:-none}&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
+		sed -i "s#\$uuid#$uuid#g" server.json &&
+		sed -i "s#\$xray_tcp_port#$xray_tcp_port#g" server.json &&
+		sed -i "s#\$email#$email#g" server.json &&
+		sed -i "s#\$domain#$domain#g" server.json &&
+		sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" server.json &&
+		sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" server.json &&
+		sed -i "s#\$domain#$domain#g" nginx.conf &&
+		sed -i "s#\$webroot#$webroot#g" nginx.conf
 		;;
-	2)
+	3)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_ws_path=${xray_ws_path:-/v0}
 		local xray_ws_port=${xray_ws_port:-8081}
@@ -233,7 +238,8 @@ List of templates:
 			systemctl stop nginx.service &&
 			systemctl start nginx.service &&
 			systemctl start xray.service &&
-			echo -e "configuration successful!\n\n\e[32m$share_uri\e[0m\n"
+			echo "configuration successful!" &&
+			echo -e "\e[32m$share_uri\e[0m" 
 	else
 		pr_error "generate configuration failed!"
 		exit 1
