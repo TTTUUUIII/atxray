@@ -189,11 +189,11 @@ List of templates:
 			sed -i "s#\$xray_tcp_port#$xray_tcp_port#g" server.json &&
 			sed -i "s#\$email#$email#g" server.json &&
 			sed -i "s#\$domain#$domain#g" server.json &&
-			sed -i "s#\$ssl_full_chain#$CERT_INSTALL_PATH/$domain.pem#g" server.json &&
+			sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" server.json &&
 			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" server.json &&
 			sed -i "s#\$domain#$domain#g" nginx.conf &&
 			sed -i "s#\$webroot#$webroot#g" nginx.conf &&
-			sed -i "s#\$ssl_full_chain#$CERT_INSTALL_PATH/$domain.pem#g" nginx.conf &&
+			sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" nginx.conf &&
 			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf
 		;;
 	2)
@@ -209,7 +209,7 @@ List of templates:
 			sed -i "s#\$xray_ws_path#$xray_ws_path#g" server.json &&
 			sed -i "s#\$domain#$domain#g" nginx.conf &&
 			sed -i "s#\$webroot#$webroot#g" nginx.conf &&
-			sed -i "s#\$ssl_full_chain#$CERT_INSTALL_PATH/$domain.pem#g" nginx.conf &&
+			sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" nginx.conf &&
 			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf &&
 			sed -i "s#\$xray_ws_path#$xray_ws_path#g" nginx.conf &&
 			sed -i "s#\$xray_ws_port#$xray_ws_port#g" nginx.conf
