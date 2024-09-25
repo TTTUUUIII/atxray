@@ -12,11 +12,7 @@ ACME=$HOME/.acme.sh/acme.sh
 CERT_INSTALL_PATH=$HOME/.ssl
 
 my_dir=$(pwd)
-email=example@outlook.com
-domain=example.com
 webroot=/var/www/html
-auto_issue_cert=0
-auto_configuration=0
 action=0
 
 function pr_error() {
@@ -53,11 +49,23 @@ function parse_arg() {
 	--uuid*)
 		uuid=$value
 		;;
+	--xray-tcp-port*)
+		xray_tcp_port=$value
+		;;
+	--xray-ws-path*)
+		xray_ws_path=$value
+		;;
+	--xray-ws-port*)
+		xray_ws_port=$value
+		;;
 	--auto-issue-cert)
 		auto_issue_cert=1
 		;;
-	--auto-configuration)
-		auto_configuration=1
+	--auto-configure)
+		auto_configure=1
+		;;
+	--force-renew)
+		force_renew=1
 		;;
 	install | init)
 		action=$ACTION_INIT
@@ -88,26 +96,25 @@ function parse_args() {
 }
 
 function issue_cert() {
-    local renew=${renew:-0}
-	if [ $domain == "" ]; then
-		read -p "Please input your domain: " domain
+	local renew=${force_renew:-0}
+	[ -z "$domain" ] && read -p "Please input your domain: " domain
+	if [ $renew -eq 1 ]; then
+		$ACME --renew -d $domain --force
+	else
+		$ACME --issue -d $domain -w $webroot --keylength ec-256 --server ${ca_server:-zerossl}
+		if [ $? -eq 0 ]; then
+			mkdir -p $CERT_INSTALL_PATH
+			$ACME --install-cert -d $domain --key-file "$CERT_INSTALL_PATH/$domain.key" --fullchain-file "$CERT_INSTALL_PATH/$domain.pem" --reloadcmd "systemctl reload nginx.service > /dev/null 2>&1"
+			$ACME --info -d $domain
+		fi
 	fi
-    if [ $renew -eq 1 ]; then
-        $ACME --renew -d $domain --force
-    else
-	    $ACME --issue -d $domain -w $webroot --keylength ec-256 --server ${ca_server:-zerossl}
-    fi
-	if [ $? -eq 0 ]; then
-		mkdir -p $CERT_INSTALL_PATH
-		$ACME --install-cert -d $domain --key-file "$CERT_INSTALL_PATH/$domain.key" --fullchain-file "$CERT_INSTALL_PATH/$domain.pem"
-		return $?
-	fi
-	pr_error "issue cert failed!"
-	return 1
+	return $?
 }
 
 function install() {
 
+	local auto_issue_cert=${auto_issue_cert:-0}
+	local auto_configure=${auto_configure:-0}
 	# install nginx
 	if ! nginx -version >/dev/null 2>&1; then
 		apt update
@@ -118,9 +125,7 @@ function install() {
 
 	# install acme.sh
 	if ! $ACME --version >/dev/null 2>&1; then
-		if [ $email == "" ]; then
-			read -p "Please input your email: " email
-		fi
+		[ -z "$email" ] && read -p "Please input your email: " email
 		curl https://get.acme.sh | sh -s email=$email
 	else
 		pr_warn "acme.sh already installed, skipped."
@@ -136,8 +141,8 @@ function install() {
 	# if auto_issue_cert option is specified, we still need issue cert.
 	if [ $auto_issue_cert -eq 1 ]; then
 		issue_cert
-
-		if [ $? -eq 0 ] && [ $auto_configuration -eq 1 ]; then
+		# if auto_configure option is specified, we still need call configure function.
+		if [ $? -eq 0 ] && [ $auto_configure -eq 1 ]; then
 			configure
 		fi
 	fi
@@ -162,9 +167,10 @@ List of templates:
 	read -p "Please select a template: " tid
 	local uuid=${uuid:-$(xray uuid)}
 	local scheme="vless:"
+	[ -z "$domain" ] && read -p "Please input your domain: " domain
 	case $tid in
 	1)
-        local xray_tcp_port=${xray_tcp_port:-80}
+		local xray_tcp_port=${xray_tcp_port:-8081}
 		local authority="//$uuid@$domain:$xray_tcp_port"
 		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
 		cp -r $HOME/.xray/templates/vless+tcp+tls . &&
@@ -181,8 +187,8 @@ List of templates:
 			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" nginx.conf
 		;;
 	2)
-        local xray_ws_path=${xray_ws_path:-/v0}
-        local xray_ws_port=${xray_ws_port:-8080}
+		local xray_ws_path=${xray_ws_path:-/v0}
+		local xray_ws_port=${xray_ws_port:-8082}
 		local authority="//$uuid@$domain:443"
 		local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#${remark:-Default}"
 		cp -r $HOME/.xray/templates/vless+ws+web . &&
@@ -234,20 +240,20 @@ version $VERSION
 usage: xray_helper.sh [ACTION] [OPTION]...
 
 actions:
-    init or install             xray、nginx、acme.sh will be installed.
-		--auto-issue-cert
+    init or install             xray[https://xtls.github.io/]、nginx[https://nginx.org/]、acme.sh[https://github.com/acmesh-official/acme.sh] will be installed.
+		--auto-issue-cert, --auto-configure
     configure                   generate xray configure.
-		--domain, --email, --webroot
+		--domain, --email
     cert                        issue a ssl cert use acme.sh.
-		--email, --domain, --webroot, --ca-server
+		--domain
     help                        show this help.
 
 options:
-    --email                     specify a email. ex: --email=david@outlook.com
+    --email                     specify a email.
     --domain                    specify domain.
-    --webroot                   specify web root.
+    --webroot                   specify web root. (default: /var/www/html)
     --auto-issue-cert           vaild when action is install (or init), when this option was specified, an ssl cert will be automatically issue a cert after installed.
-    --auto-configuration        vaild when action is install (or init) and --auto-issue-cert is specified.
+    --auto-configure        vaild when action is install (or init) and --auto-issue-cert is specified.
 	--ca-server					specify ca server for acme.sh.
 		supported CA:
 			- zerossl
@@ -255,8 +261,18 @@ options:
 			- buypass
 			- ssl
 			- google
+    --force-renew               force renew the certs.
     --remark                    specify configuration alias.
     --uuid                      specify configuration uuid.
+    --xray-tcp-port             xray tcp port.
+    --xray-ws-port              xray ws port.
+    --xray-ws-path              xray ws path.
+
+    examples:
+        xray_helper.sh init --email=example@gmail.com                                                                       initialize environment for xray.
+        xray_helper.sh cert --domain=example.com                                                                            issue and install cert use acme.sh.
+        xray_helper.sh configure --domain=example.com                                                                       generate xray configuration.
+        xray_helper.sh init --auto-issue-cert --auto-configre --domain=example.com --email=example@gmail.com                ...
 """
 
 }
@@ -271,14 +287,14 @@ $ACTION_CONFIGURE)
 	configure
 	;;
 $ACTION_ISSUE_CERT)
-	issue_cert 3
+	issue_cert
 	;;
 $ACTION_SHOW_HELP)
 	show_help
 	;;
 *)
-	if [ "$1" == "" ]; then
-		pr_error "action must be specified!"
+	if [ -z "$1" ]; then
+		pr_warn "no action specified!"
 	else
 		pr_error "unknown \"$1\" action!"
 	fi
