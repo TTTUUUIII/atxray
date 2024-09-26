@@ -2,6 +2,7 @@
 
 VERSION=0.0.1
 TEMPLATES_GIT_URL=https://github.com/TTTUUUIII/xray-templates.git
+ATXRAY_HOME=${ATXRAY_HOME:-$HOME/.atxray}
 
 ACTION_INIT=1
 ACTION_CONFIGURE=2
@@ -159,9 +160,9 @@ function install() {
 
 function configure() {
 	requires git xray /usr/sbin/nginx
-	if [ ! -d $HOME/.xray/templates ]; then
+	if [ ! -d $ATXRAY_HOME/templates ]; then
 		echo "fetch templates from $TEMPLATES_GIT_URL"
-		if ! git clone $TEMPLATES_GIT_URL $HOME/.xray/templates; then
+		if ! git clone $TEMPLATES_GIT_URL $ATXRAY_HOME; then
 			exit 1
 		fi
 	fi
@@ -179,25 +180,25 @@ List of templates:
 	local uuid=${uuid:-$(xray uuid)}
 	local scheme="vless:"
 	case ${tid:=1} in
-	1|2)
+	1 | 2)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_tcp_port=${xray_tcp_port:-443}
 		local authority="//$uuid@$domain:$xray_tcp_port"
 		if [ $tid -eq 1 ]; then
-			cp -r $HOME/.xray/templates/vless+tcp+tls . && cd vless+tcp+tls
+			cp -r $ATXRAY_HOME/templates/vless+tcp+tls . && cd vless+tcp+tls
 		else
 			local flow="xtls-rprx-vision"
-			cp -r $HOME/.xray/templates/vless+tcp+xtls-vision . && cd vless+tcp+xtls-vision
+			cp -r $ATXRAY_HOME/templates/vless+tcp+xtls-vision . && cd vless+tcp+xtls-vision
 		fi
 		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&flow=${flow:-none}&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
 		sed -i "s#\$uuid#$uuid#g" server.json &&
-		sed -i "s#\$xray_tcp_port#$xray_tcp_port#g" server.json &&
-		sed -i "s#\$email#$email#g" server.json &&
-		sed -i "s#\$domain#$domain#g" server.json &&
-		sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" server.json &&
-		sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" server.json &&
-		sed -i "s#\$domain#$domain#g" nginx.conf &&
-		sed -i "s#\$webroot#$webroot#g" nginx.conf
+			sed -i "s#\$xray_tcp_port#$xray_tcp_port#g" server.json &&
+			sed -i "s#\$email#$email#g" server.json &&
+			sed -i "s#\$domain#$domain#g" server.json &&
+			sed -i "s#\$ssl_fullchain#$CERT_INSTALL_PATH/$domain.pem#g" server.json &&
+			sed -i "s#\$ssl_key#$CERT_INSTALL_PATH/$domain.key#g" server.json &&
+			sed -i "s#\$domain#$domain#g" nginx.conf &&
+			sed -i "s#\$webroot#$webroot#g" nginx.conf
 		;;
 	3)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
@@ -205,7 +206,7 @@ List of templates:
 		local xray_ws_port=${xray_ws_port:-8081}
 		local authority="//$uuid@$domain:443"
 		local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#${remark:-Default}"
-		cp -r $HOME/.xray/templates/vless+ws+web . &&
+		cp -r $ATXRAY_HOME/templates/vless+ws+web . &&
 			cd vless+ws+web &&
 			sed -i "s#\$uuid#$uuid#g" server.json &&
 			sed -i "s#\$xray_ws_port#$xray_ws_port#g" server.json &&
@@ -239,7 +240,7 @@ List of templates:
 			systemctl start nginx.service &&
 			systemctl start xray.service &&
 			echo "configuration successful!" &&
-			echo -e "\e[32m$share_uri\e[0m" 
+			echo -e "\e[32m$share_uri\e[0m"
 	else
 		pr_error "generate configuration failed!"
 		exit 1
