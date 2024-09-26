@@ -19,6 +19,6 @@ fi
 
 git clone https://github.com/TTTUUUIII/atxray.git $ATXRAY_HOME &&
 	chmod +x $HOME/.atxray/atxray.sh &&
-	ln -sf $ATXRAY_HOME/atxray.sh $HOME/atxray.sh
+	ln -sf $ATXRAY_HOME/atxray.sh ${ATXRAY_LINK:-$HOME}/atxray.sh
 
 exit $?
