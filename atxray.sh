@@ -3,11 +3,13 @@
 VERSION=0.0.1
 TEMPLATES_GIT_URL=https://github.com/TTTUUUIII/atxray.git
 ATXRAY_HOME=${ATXRAY_HOME:-$HOME/.atxray}
+ATXRAY_TMP=/tmp/tmp.ATXRAY
 
 ACTION_INIT=1
 ACTION_CONFIGURE=2
 ACTION_ISSUE_CERT=3
 ACTION_SHOW_HELP=4
+ACTION_UPDATE=5
 
 ACME=$HOME/.acme.sh/acme.sh
 CERT_INSTALL_PATH=$HOME/.ssl
@@ -76,6 +78,9 @@ function parse_arg() {
 		;;
 	cert)
 		action=$ACTION_ISSUE_CERT
+		;;
+	update)
+		action=$ACTION_UPDATE
 		;;
 	help)
 		action=$ACTION_SHOW_HELP
@@ -166,7 +171,11 @@ function configure() {
 			exit 1
 		fi
 	fi
-
+	if [ ! -d $ATXRAY_TMP ]; then
+		if ! mkdir $ATXRAY_TMP; then
+			exit 1
+		fi
+	fi
 	echo -e """
 List of templates:
 +--------------------------+
@@ -185,10 +194,10 @@ List of templates:
 		local xray_tcp_port=${xray_tcp_port:-443}
 		local authority="//$uuid@$domain:$xray_tcp_port"
 		if [ $tid -eq 1 ]; then
-			cp -r $ATXRAY_HOME/templates/vless+tcp+tls . && cd vless+tcp+tls
+			cp -r $ATXRAY_HOME/templates/vless+tcp+tls $ATXRAY_TMP && cd $ATXRAY_TMP/vless+tcp+tls
 		else
 			local flow="xtls-rprx-vision"
-			cp -r $ATXRAY_HOME/templates/vless+tcp+xtls-vision . && cd vless+tcp+xtls-vision
+			cp -r $ATXRAY_HOME/templates/vless+tcp+xtls-vision $ATXRAY_TMP && cd $ATXRAY_TMP/vless+tcp+xtls-vision
 		fi
 		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&flow=${flow:-none}&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
 		sed -i "s#\$uuid#$uuid#g" server.json &&
@@ -206,8 +215,8 @@ List of templates:
 		local xray_ws_port=${xray_ws_port:-8081}
 		local authority="//$uuid@$domain:443"
 		local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#${remark:-Default}"
-		cp -r $ATXRAY_HOME/templates/vless+ws+web . &&
-			cd vless+ws+web &&
+		cp -r $ATXRAY_HOME/templates/vless+ws+web $ATXRAY_TMP &&
+			cd $ATXRAY_TMP/vless+ws+web &&
 			sed -i "s#\$uuid#$uuid#g" server.json &&
 			sed -i "s#\$xray_ws_port#$xray_ws_port#g" server.json &&
 			sed -i "s#\$xray_ws_path#$xray_ws_path#g" server.json &&
@@ -263,6 +272,7 @@ actions:
     cert                        issue a ssl cert use acme.sh.
 		--domain
     help                        show this help.
+	update						update atxray.sh and templates.
 
 options:
     --email                     specify a email.
@@ -303,6 +313,9 @@ $ACTION_CONFIGURE)
 	;;
 $ACTION_ISSUE_CERT)
 	issue_cert
+	;;
+$ACTION_UPDATE)
+	cd $ATXRAY_HOME && git pull
 	;;
 $ACTION_SHOW_HELP)
 	show_help
