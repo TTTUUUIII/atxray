@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VERSION=0.0.1
-TEMPLATES_GIT_URL=https://github.com/TTTUUUIII/xray-templates.git
+TEMPLATES_GIT_URL=https://github.com/TTTUUUIII/atxray.git
 ATXRAY_HOME=${ATXRAY_HOME:-$HOME/.atxray}
 
 ACTION_INIT=1
