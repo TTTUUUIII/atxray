@@ -176,28 +176,37 @@ function configure() {
 			exit 1
 		fi
 	fi
-	echo -e """
-List of templates:
-+--------------------------+
-| 1. vless+tcp+tls         |
-| 2. vless+tcp+xtls-vision |
-| 3. vless+ws+web          |
-+--------------------------+
-"""
-
-	read -p "Select a template[1]: " tid
+	local index=1
+	echo "+-------------------------------+"
+	for it in $ATXRAY_HOME/templates/*; do
+		[ -d $it ] && templates+=($(basename $it))
+		printf "| %-2d. %-25s |\n" $index $(basename $it)
+		((index++))
+	done
+	echo "+-------------------------------+"
+	read -p "Select a template: " tid
+	if [[ "$tid" =~ ^[0-9]+$ ]] && [ $tid -gt 0 ]; then
+		local choose=${templates[((tid - 1))]}
+	else
+		pr_error "\"$tid\" is invalid input!"
+		exit 1
+	fi
 	local uuid=${uuid:-$(xray uuid)}
 	local scheme="vless:"
-	case ${tid:=1} in
-	1 | 2)
+	if [ -z $choose ]; then
+		pr_error "the template with id \"$tid\" was not found!"
+		exit 1
+	else
+		echo -e "your choice \e[33m$choose\e[0m"
+	fi
+	case $choose in
+	vless+tcp+tls | vless+tcp+xtls-vision)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_tcp_port=${xray_tcp_port:-443}
 		local authority="//$uuid@$domain:$xray_tcp_port"
-		if [ $tid -eq 1 ]; then
-			cp -r $ATXRAY_HOME/templates/vless+tcp+tls $ATXRAY_TMP && cd $ATXRAY_TMP/vless+tcp+tls
-		else
+		cp -r $ATXRAY_HOME/templates/$choose $ATXRAY_TMP && cd $ATXRAY_TMP/$choose
+		if [ $template == "vless+tcp+xtls-vision" ]; then
 			local flow="xtls-rprx-vision"
-			cp -r $ATXRAY_HOME/templates/vless+tcp+xtls-vision $ATXRAY_TMP && cd $ATXRAY_TMP/vless+tcp+xtls-vision
 		fi
 		local query="?security=tls&encryption=none&alpn=h2,http/1.1&headerType=none&flow=${flow:-none}&fp=chrome&type=tcp&sni=$domain#${remark:-Default}"
 		sed -i "s#\$uuid#$uuid#g" server.json &&
@@ -209,14 +218,14 @@ List of templates:
 			sed -i "s#\$domain#$domain#g" nginx.conf &&
 			sed -i "s#\$webroot#$webroot#g" nginx.conf
 		;;
-	3)
+	vless+ws+web)
 		[ -z "$domain" ] && read -p "Input your domain: " domain
 		local xray_ws_path=${xray_ws_path:-/v0}
 		local xray_ws_port=${xray_ws_port:-8081}
 		local authority="//$uuid@$domain:443"
 		local query="?path=$xray_ws_path&security=tls&encryption=none&alpn=http/1.1&host=$domain&type=ws&sni=$domain#${remark:-Default}"
-		cp -r $ATXRAY_HOME/templates/vless+ws+web $ATXRAY_TMP &&
-			cd $ATXRAY_TMP/vless+ws+web &&
+		cp -r $ATXRAY_HOME/templates/$choose $ATXRAY_TMP &&
+			cd $ATXRAY_TMP/$choose &&
 			sed -i "s#\$uuid#$uuid#g" server.json &&
 			sed -i "s#\$xray_ws_port#$xray_ws_port#g" server.json &&
 			sed -i "s#\$xray_ws_path#$xray_ws_path#g" server.json &&
@@ -228,7 +237,7 @@ List of templates:
 			sed -i "s#\$xray_ws_port#$xray_ws_port#g" nginx.conf
 		;;
 	*)
-		pr_error "$tid not a valid template id!"
+		pr_error "unknown template \"$choose\"."
 		exit 1
 		;;
 	esac
@@ -240,9 +249,9 @@ List of templates:
 			rm -rf /etc/nginx/sites-e/$domain &&
 			ln -sf /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/$domain &&
 			mkdir -p /usr/local/etc/xray/conf.d &&
-			cp server.json /usr/local/etc/xray/conf.d/$(basename $temp_dir).json &&
+			cp server.json /usr/local/etc/xray/conf.d/${choose}.json &&
 			rm -f /usr/local/etc/xray/conf.d/config.json &&
-			ln -sf /usr/local/etc/xray/conf.d/$(basename $temp_dir).json /usr/local/etc/xray/config.json &&
+			ln -sf /usr/local/etc/xray/conf.d/${choose}.json /usr/local/etc/xray/config.json &&
 			systemctl stop xray.service &&
 			systemctl stop nginx.service &&
 			systemctl start nginx.service &&
