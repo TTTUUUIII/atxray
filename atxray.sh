@@ -197,7 +197,7 @@ function configure() {
 		pr_error "The template with id \"$tid\" was not found!"
 		exit 1
 	else
-		echo -e "Your choice \e[33m$choose\e[0m"
+		echo -e "Your choice is \e[33m$choose\e[0m"
 	fi
 	case $choose in
 	vless+tcp+tls | vless+tcp+xtls-vision)
