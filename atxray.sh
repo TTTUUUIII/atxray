@@ -87,7 +87,7 @@ function parse_arg() {
 		;;
 	*)
 		if [ "${1:0:2}" == "--" ]; then
-			pr_warn "unknown option $key, ignored!"
+			pr_warn "Unknown option $key, ignored!"
 		fi
 		;;
 	esac
@@ -104,7 +104,7 @@ function parse_args() {
 function requires() {
 	for cmd in "$@"; do
 		if ! $cmd --version >/dev/null 2>&1 && ! $cmd -version >/dev/null 2>&1; then
-			pr_error "failed! $cmd not install."
+			pr_error "Failed! $cmd not install."
 			exit 1
 		fi
 	done
@@ -166,7 +166,7 @@ function install() {
 function configure() {
 	requires git xray /usr/sbin/nginx
 	if [ ! -d $ATXRAY_HOME/templates ]; then
-		echo "fetch templates from $TEMPLATES_GIT_URL"
+		echo "Fetch templates from $TEMPLATES_GIT_URL"
 		if ! git clone $TEMPLATES_GIT_URL $ATXRAY_HOME; then
 			exit 1
 		fi
@@ -194,10 +194,10 @@ function configure() {
 	local uuid=${uuid:-$(xray uuid)}
 	local scheme="vless:"
 	if [ -z $choose ]; then
-		pr_error "the template with id \"$tid\" was not found!"
+		pr_error "The template with id \"$tid\" was not found!"
 		exit 1
 	else
-		echo -e "your choice \e[33m$choose\e[0m"
+		echo -e "Your choice \e[33m$choose\e[0m"
 	fi
 	case $choose in
 	vless+tcp+tls | vless+tcp+xtls-vision)
@@ -237,7 +237,7 @@ function configure() {
 			sed -i "s#\$xray_ws_port#$xray_ws_port#g" nginx.conf
 		;;
 	*)
-		pr_error "unknown template \"$choose\"."
+		pr_error "Unknown template \"$choose\"."
 		exit 1
 		;;
 	esac
@@ -256,10 +256,9 @@ function configure() {
 			systemctl stop nginx.service &&
 			systemctl start nginx.service &&
 			systemctl start xray.service &&
-			echo "configuration successful!" &&
 			echo -e "\e[32m$share_uri\e[0m"
 	else
-		pr_error "generate configuration failed!"
+		pr_error "Generate configuration failed!"
 		exit 1
 	fi
 
@@ -269,10 +268,10 @@ function configure() {
 function show_help() {
 
 	echo """
-version $VERSION
-usage: xray_helper.sh [ACTION] [OPTION]...
+Version $VERSION
+Usage: xray_helper.sh [ACTION] [OPTION]...
 
-actions:
+Actions:
     init or install             xray[https://xtls.github.io/]、nginx[https://nginx.org/]、acme.sh[https://github.com/acmesh-official/acme.sh] will be installed.
 		--auto-issue-cert, --auto-configure
     configure                   generate xray configure.
@@ -282,7 +281,7 @@ actions:
     help                        show this help.
 	update						update atxray.sh and templates.
 
-options:
+Options:
     --email                     specify a email.
     --domain                    specify domain.
     --webroot                   specify web root. (default: /var/www/html)
@@ -302,10 +301,10 @@ options:
     --xray-ws-port              xray ws port.
     --xray-ws-path              xray ws path.
 
-    examples:
-        xray_helper.sh init --email=example@gmail.com                       initialize environment for xray.
-        xray_helper.sh cert --domain=example.com                            issue and install cert use acme.sh.
-        xray_helper.sh configure --domain=example.com                       generate xray configuration.
+Examples:
+    xray_helper.sh init --email=example@gmail.com                       initialize environment for xray.
+    xray_helper.sh cert --domain=example.com                            issue and install cert use acme.sh.
+    xray_helper.sh configure --domain=example.com                       generate xray configuration.
 """
 
 }
