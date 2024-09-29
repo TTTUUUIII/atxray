@@ -235,15 +235,14 @@ List of templates:
 
 	local temp_dir=$(pwd)
 	if [ $? -eq 0 ]; then
-		local pwd=$(pwd)
 		local share_uri=$(echo -n "$scheme$authority$query" | base64)
 		cp nginx.conf /etc/nginx/sites-available/$domain &&
 			rm -rf /etc/nginx/sites-e/$domain &&
 			ln -sf /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/$domain &&
 			mkdir -p /usr/local/etc/xray/conf.d &&
-			cp server.json /usr/local/etc/xray/conf.d/$(basename $(pwd)).json &&
+			cp server.json /usr/local/etc/xray/conf.d/$(basename $temp_dir).json &&
 			rm -f /usr/local/etc/xray/conf.d/config.json &&
-			ln -sf /usr/local/etc/xray/conf.d/$(basename $(pwd)).json /usr/local/etc/xray/config.json &&
+			ln -sf /usr/local/etc/xray/conf.d/$(basename $temp_dir).json /usr/local/etc/xray/config.json &&
 			systemctl stop xray.service &&
 			systemctl stop nginx.service &&
 			systemctl start nginx.service &&
