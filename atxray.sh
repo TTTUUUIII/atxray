@@ -10,6 +10,7 @@ ACTION_CONFIGURE=2
 ACTION_ISSUE_CERT=3
 ACTION_SHOW_HELP=4
 ACTION_UPDATE=5
+ACTION_SHOW_VERSION=6
 
 ACME=$HOME/.acme.sh/acme.sh
 CERT_INSTALL_PATH=$HOME/.ssl
@@ -84,6 +85,9 @@ function parse_arg() {
 		;;
 	help)
 		action=$ACTION_SHOW_HELP
+		;;
+	version)
+		action=$ACTION_SHOW_VERSION
 		;;
 	*)
 		if [ "${1:0:2}" == "--" ]; then
@@ -268,8 +272,13 @@ function configure() {
 function show_help() {
 
 	echo """
-Version $VERSION
-Usage: xray_helper.sh [ACTION] [OPTION]...
+atxray.sh Version: $VERSION
+    """
+	if [ $action -eq $ACTION_SHOW_VERSION ]; then
+		exit 0
+	fi
+	echo """
+Usage: atxray.sh [ACTION] [OPTION]...
 
 Actions:
     init or install             xray[https://xtls.github.io/]、nginx[https://nginx.org/]、acme.sh[https://github.com/acmesh-official/acme.sh] will be installed.
@@ -302,9 +311,9 @@ Options:
     --xray-ws-path              xray ws path.
 
 Examples:
-    xray_helper.sh init --email=example@gmail.com                       initialize environment for xray.
-    xray_helper.sh cert --domain=example.com                            issue and install cert use acme.sh.
-    xray_helper.sh configure --domain=example.com                       generate xray configuration.
+    atxray.sh init --email=example@gmail.com                       initialize environment for xray.
+    atxray.sh cert --domain=example.com                            issue and install cert use acme.sh.
+    atxray.sh configure --domain=example.com                       generate xray configuration.
 """
 
 }
@@ -324,7 +333,7 @@ $ACTION_ISSUE_CERT)
 $ACTION_UPDATE)
 	cd $ATXRAY_HOME && git pull
 	;;
-$ACTION_SHOW_HELP)
+$ACTION_SHOW_HELP | $ACTION_SHOW_VERSION)
 	show_help
 	;;
 *)
